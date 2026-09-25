@@ -10,6 +10,35 @@ A small **read-only** field finder for Helldivers 2 mod authors and AI agents. B
 
 Provide your own **decoded** files: an LDLD entity blob (raw or gzip), optionally decoded damage settings and a projectile table, plus optional newline-separated resource names and type names. [Filediver](https://github.com/xypwn/filediver) can help inspect game assets; extraction alone does not prove the data is decoded or establish field semantics. Supply only the inputs you actually have:
 
+### Three steps: find the C4 backpack by ID
+
+Clone the repository, enter it, then replace the example path with **your own decoded** entity data. A missing file or still-wrapped game data cannot yield field results.
+
+```bash
+git clone git@github.com:OPFIMISS/Helldivers-2-SageLibrary.git
+cd Helldivers-2-SageLibrary
+python sagelib.py build --entities /data/generated_entities.decoded.gz --source historical
+python sagelib.py search 0x2A18F81C44A26771
+```
+
+The sample ID `0x2A18F81C44A26771` identifies the **C4 backpack resource**; it is not a damage ID. The search returns JSON. Relevant excerpt (the full result also includes input SHA-256):
+
+```json
+{
+  "evidence": "historical_not_current",
+  "results": [{
+    "table_name": "DepositComponentData",
+    "record_index": 10,
+    "record_offset": 2448,
+    "fields": {"starting": 6, "maximum": 6, "refill": 3}
+  }]
+}
+```
+
+`historical_not_current` means **this value comes from historical decoded input**, not a verified current-game reading. With a newline-separated `cracked.txt`, add `--names /data/cracked.txt` when building and search `python sagelib.py search c4_charge_backpack` instead. Build once, then search other IDs without rebuilding: with decoded damage data indexed, `python sagelib.py search damage:206` looks up a **damage ID**; use `projectile:96` for a projectile ID. For game-update checks, see “Updates and provenance” below.
+
+### More inputs: damage and projectiles
+
 ```bash
 python sagelib.py build --entities /data/generated_entities.decoded.gz --damage /data/generated_damage_settings.decoded.dl_bin --projectiles /data/ProjectileSettings.bin --names /data/cracked.txt --types /data/dl_type_names.txt --source historical
 python sagelib.py search c4_charge_backpack

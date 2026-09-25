@@ -10,6 +10,35 @@
 
 准备**自行合法获取的、已解码**游戏数据：实体文件（例如 Filediver 导出的明文 LDLD 数据，原始字节或 gzip）、可选伤害文件、弹丸表、资源名表和类型名表。[Filediver](https://github.com/xypwn/filediver) 是可研究的资源提取工具；提取成功并不意味着某文件已解码，也不意味着字段语义已证明。输入均为用户本机文件，仓库不包含游戏文件。
 
+### 三步教程：按 ID 查 C4 背包
+
+以下命令在 **PowerShell** 中运行。先克隆仓库、进入目录；把示例文件路径替换成你自己已经解码的实体文件路径。文件不存在或仍是游戏封装数据时，`build` 会报错，而不是凭空生成字段。
+
+```powershell
+git clone git@github.com:OPFIMISS/Helldivers-2-SageLibrary.git
+cd Helldivers-2-SageLibrary
+python sagelib.py build --entities "C:\data\generated_entities.decoded.gz" --source historical
+python sagelib.py search 0x2A18F81C44A26771
+```
+
+示例 ID `0x2A18F81C44A26771` 是 C4 **背包资源哈希**，不是伤害 ID。最后一条命令会返回 JSON；其中相关字段示例如下（仅摘录，实际输出还包含源文件 SHA-256）：
+
+```json
+{
+  "evidence": "historical_not_current",
+  "results": [{
+    "table_name": "DepositComponentData",
+    "record_index": 10,
+    "record_offset": 2448,
+    "fields": {"starting": 6, "maximum": 6, "refill": 3}
+  }]
+}
+```
+
+`historical_not_current` 表示这是**历史解码文件中的值，不保证等于当前游戏版本**。如有逐行资源名的 `cracked.txt`，可在建库命令后加 `--names "C:\data\cracked.txt"`，然后直接运行 `python sagelib.py search c4_charge_backpack`。换一个查询目标无需重新建库；例如提供解码伤害文件建库后，用 `python sagelib.py search damage:206` 查该**伤害 ID** 的数值，弹丸 ID 则用 `projectile:96`。若要核对游戏更新后的值，请看下方“游戏更新与证据等级”。
+
+### 更多输入：伤害和弹丸
+
 ```powershell
 python sagelib.py build --entities "C:\data\generated_entities.decoded.gz" --damage "C:\data\generated_damage_settings.decoded.dl_bin" --projectiles "C:\data\ProjectileSettings.bin" --names "C:\data\cracked.txt" --types "C:\data\dl_type_names.txt" --source historical
 python sagelib.py search c4_charge_backpack
