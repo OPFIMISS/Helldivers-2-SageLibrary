@@ -1,0 +1,9 @@
+.sagelib/
+__pycache__/
+*.pyc
+*.sqlite3
+*.sqlite3-*
+*.dl_bin
+*.bin
+*.gz
+*.patch_*
