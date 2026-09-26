@@ -13,4 +13,6 @@
 
 Filediver 对当前档案定向提取 `.unit` GLB 与 `.state_machine` JSON：DBS-2 和司炉者均有 `attach_underbarrel` 骨骼，前者在 `barrel_pivot` 下、后者在 `boss` 下；DBS-2 状态机有 `fire_mode`，司炉者状态机未见同名变量。骨骼存在不表示装备组件已挂载。历史生成实体中司炉者下挂资源独自占用弹匣、喷射和 loadout 记录；扫描各已知组件表未找到父→子**完整 64 位 hash** 直接引用，说明关联可能在其他资源或采用其他编码，不能以零命中证明无关联。
 
+**附件链新证据（历史解码快照，并非本版运行时）：** Filediver 原始类型定义有 `WeaponCustomizationComponent.DefaultAttachments` 和 `UnderbarrelPath`，附件槽枚举 `1=Underbarrel`。历史表大小 941536，映射 6112，192×4872 字节记录；DBS-2、司炉者、仲裁者默认下挂附件 thin hash 分别为 `0xACC1561C`、`0x3E186F1F`、`0xFC0659C0`，各自基础记录 +192 的 64 位 `UnderbarrelPath` 均为零。这三个 thin hash 不是子实体资源哈希，且本机当前表尚未只读导出；不可照搬旧值。可复查脚本为本地 `research-addon/inspect_underbarrel.py`（含 `test_underbarrel.py`）。下一步需要解析 `generated_weapon_customization_settings` 中 thin hash→附件，并解析 `generated_entity_deltas` 中附件对宿主的变更，再核实子武器网络行为。本机这两张游戏文件仍封装，原样薄哈希检索零命中不是不存在的证据。
+
 **可实施路径**：保留 DBS-2 原来的霰弹两种射击方式；先证明宿主如何引用/实例化独立下挂实体，再给子实体配置 15 发 WeaponMagazine、经当前 DamageSettings 证明的 AP2 子弹、ProjectileWeapon、换弹/射击动画和联网同步，最后在宿主中增加已验证的切换功能。只改射速、功能值或弹丸会共享霰弹池或损坏现有模式，不满足独立 15 发要求。未证明的实体创建/挂载 API 不写入 MOD。
