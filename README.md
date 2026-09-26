@@ -6,6 +6,12 @@
 
 > **MOD 前置：**使用本工具查询数据**不需要**安装 Bingus；若根据结果编写/运行本项目所研究的 Lua MOD，则需要 [BingusSharedLoader](https://github.com/CowboyBingus/BingusSharedLoader) 作为前置框架。该框架负责加载 Lua，**不提供万能字段搜索 API**。务必遵守所用框架的对应版本和游戏版本要求。
 
+## 静态数值与弹头：双重自由示例
+
+对自行提取的已解码实体文件建库后运行 `python sagelib.py search 0x72170A55A1F37FF1`。已核验版本的 `WeaponRoundsComponentData` 映射位于 624，值 8 是**记录索引，不是弹容量**；数据从 800 开始，记录步长 136，目标记录从 `800 + 8 * 136 = 1888` 开始。记录 +72 是 float32 弹容量 2.0，+76 是第二容量 0.0，+80/+84 是备弹/补给 40/40。改为四发只修改 float32 的 `00000040→00008040`。查询的版本证据需要核对本机 EXE/DLL SHA；**新补丁的游戏效果尚未实测**。
+
+`python sagelib.py search damage:206` 可查伤害、耐伤、穿甲和拆毁；`python sagelib.py search projectile:96` 可查弹头速度、关联伤害 ID 和碰撞爆炸。资源 hash、伤害 ID、弹头 ID 不可混用；先确认实体绑定及弹丸是否被其他武器共用。C4 `DepositComponentData` 的整型 6/6/3、步枪 `WeaponMagazineComponentData` 的整型弹匣配置，均不适用于本例浮点容量。
+
 ## 立即使用
 
 准备**自行合法获取的、已解码**游戏数据：实体文件（例如 Filediver 导出的明文 LDLD 数据，原始字节或 gzip）、可选伤害文件、弹丸表、资源名表和类型名表。[Filediver](https://github.com/xypwn/filediver) 是可研究的资源提取工具；提取成功并不意味着某文件已解码，也不意味着字段语义已证明。输入均为用户本机文件，仓库不包含游戏文件。

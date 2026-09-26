@@ -20,6 +20,7 @@ MAX_INPUT = 256 * 1024 * 1024
 SCHEMAS = {
     "DepositComponentData": (5488, 928, 152, 30),
     "WeaponReloadComponentData": (27968, 7968, 80, 250),
+    "WeaponRoundsComponentData": (4336, 800, 136, 26),
 }
 
 
@@ -140,6 +141,12 @@ def add_entities(database, raw, names):
                 values = struct.unpack_from("<III", data, record)
                 fields = {"starting": values[0], "maximum": values[1], "refill": values[2]}
                 confidence = "layout_correlated_not_semantically_proven"
+            elif name == "WeaponRoundsComponentData":
+                fields = {"magazine_capacity": struct.unpack_from("<f", data, record + 72)[0],
+                          "magazine_capacity_secondary": struct.unpack_from("<f", data, record + 76)[0],
+                          "ammo_capacity": struct.unpack_from("<I", data, record + 80)[0],
+                          "ammo_refill": struct.unpack_from("<I", data, record + 84)[0]}
+                confidence = "layout_correlated_verify_capacity_in_game"
             else:
                 fields = {"ability_id": struct.unpack_from("<I", data, record + 4)[0],
                           "duration": struct.unpack_from("<f", data, record + 56)[0],

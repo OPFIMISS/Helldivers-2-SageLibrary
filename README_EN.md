@@ -6,6 +6,12 @@ A small **read-only** field finder for Helldivers 2 mod authors and AI agents. B
 
 > **Lua MOD prerequisite:** Searching the index does **not** require Bingus. To develop/run the Lua mods described by this skill, install [BingusSharedLoader](https://github.com/CowboyBingus/BingusSharedLoader). It loads Lua addons; it is **not** a general-purpose game-field API. Match your loader and game versions.
 
+## Static fields and projectiles: DBS-2 example
+
+Index your own decoded entities and run `python sagelib.py search 0x72170A55A1F37FF1`. In the verified build, `WeaponRoundsComponentData` maps this resource at offset 624 to **record index** 8, not capacity 8. Data begins at 800; stride is 136; the record begins at `800 + 8 * 136 = 1888`. Record +72 holds float32 shell capacity 2.0, +76 secondary capacity 0.0, +80/+84 spare/refill 40/40. A four-shell edit only changes `00000040→00008040` (float32). Check the indexed game EXE/DLL hashes; **the resulting addon has not yet been validated in gameplay**.
+
+Use `python sagelib.py search damage:206` for damage, durable damage, penetration angles and demolition; use `python sagelib.py search projectile:96` for projectile speed, linked damage ID and impact explosion. Resource hashes, damage IDs and projectile IDs are distinct. Verify weapon binding and shared projectiles before changing a payload. C4 `DepositComponentData` integer reserve values and rifle `WeaponMagazineComponentData` integer magazine values do not apply to this float capacity.
+
 ## Quick start
 
 Provide your own **decoded** files: an LDLD entity blob (raw or gzip), optionally decoded damage settings and a projectile table, plus optional newline-separated resource names and type names. [Filediver](https://github.com/xypwn/filediver) can help inspect game assets; extraction alone does not prove the data is decoded or establish field semantics. Supply only the inputs you actually have:

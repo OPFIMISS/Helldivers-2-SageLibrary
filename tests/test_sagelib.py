@@ -22,7 +22,7 @@ class SageLibraryTests(unittest.TestCase):
             unknown_name = "content/test/unknown_entity"
             names.write_text(c4 + "\n" + unknown_name + "\n", encoding="utf-8")
             types = root / "types.txt"
-            types.write_text("DepositComponentData\nUnknownComponentData\n", encoding="utf-8")
+            types.write_text("DepositComponentData\nUnknownComponentData\nWeaponRoundsComponentData\n", encoding="utf-8")
             entities = root / "entities.bin"
             deposit = bytearray(5488)
             struct.pack_into("<QII", deposit, 688, resource_hash(c4), 10, 0)
@@ -32,6 +32,11 @@ class SageLibraryTests(unittest.TestCase):
             struct.pack_into("<QII", unknown, 0, resource_hash(unknown_name), 0, 0)
             extra = b"LDLD" + struct.pack("<III", 1, type_hash("UnknownComponentData"), len(unknown)) + b"\0" * 8
             entities.write_bytes(header + deposit + extra + unknown)
+            rounds = bytearray(4336)
+            struct.pack_into("<QII", rounds, 624, 0x72170A55A1F37FF1, 8, 0)
+            struct.pack_into("<ffII", rounds, 800 + 8 * 136 + 72, 2.0, 0.0, 40, 40)
+            rounds_header = b"LDLD" + struct.pack("<III", 1, type_hash("WeaponRoundsComponentData"), len(rounds)) + b"\0" * 8
+            entities.write_bytes(entities.read_bytes() + rounds_header + rounds)
             damage = root / "damage.decoded"
             record = bytearray(76)
             struct.pack_into("<Iii4II", record, 0, 206, 450, 225, 4, 4, 4, 0, 20)
@@ -52,6 +57,12 @@ class SageLibraryTests(unittest.TestCase):
             self.assertEqual(c4_result["evidence"], "matching_build_export_not_live")
             self.assertEqual(c4_result["results"][0]["fields"],
                              {"starting": 6, "maximum": 6, "refill": 3})
+            dbs2 = query(database, "0x72170A55A1F37FF1", game_root=game)["results"][0]
+            self.assertEqual(dbs2["record_index"], 8)
+            self.assertEqual(dbs2["record_offset"], 1888)
+            self.assertEqual(dbs2["fields"], {"magazine_capacity": 2.0,
+                                                "magazine_capacity_secondary": 0.0,
+                                                "ammo_capacity": 40, "ammo_refill": 40})
             self.assertEqual(query(database, "damage:206", game_root=game)["results"][0]["fields"]["damage"], 450)
             self.assertEqual(query(database, "projectile:96", game_root=game)["results"][0]["fields"]["impact_explosion"], 300)
             candidate = query(database, unknown_name, game_root=game)["results"]
