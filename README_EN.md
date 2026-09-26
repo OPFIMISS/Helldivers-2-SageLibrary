@@ -8,6 +8,8 @@ A small **read-only** field finder for Helldivers 2 mod authors and AI agents. B
 
 ## Static fields and projectiles: DBS-2 example
 
+**A separate 15-round automatic mode is under investigation and is not part of the four-shell addon.** Changing the fire-rate or mode enum alone cannot create an independent magazine. Both DBS-2 and Stoker have underbarrel model sockets, but the child-entity binding, switching behavior and network synchronization still require verification.
+
 Index your own decoded entities and run `python sagelib.py search 0x72170A55A1F37FF1`. In the verified build, `WeaponRoundsComponentData` maps this resource at offset 624 to **record index** 8, not capacity 8. Data begins at 800; stride is 136; the record begins at `800 + 8 * 136 = 1888`. Record +72 holds float32 shell capacity 2.0, +76 secondary capacity 0.0, +80/+84 spare/refill 40/40. A four-shell edit only changes `00000040→00008040` (float32). Check the indexed game EXE/DLL hashes; **the resulting addon has not yet been validated in gameplay**.
 
 Use `python sagelib.py search damage:206` for damage, durable damage, penetration angles and demolition; use `python sagelib.py search projectile:96` for projectile speed, linked damage ID and impact explosion. Resource hashes, damage IDs and projectile IDs are distinct. Verify weapon binding and shared projectiles before changing a payload. C4 `DepositComponentData` integer reserve values and rifle `WeaponMagazineComponentData` integer magazine values do not apply to this float capacity.
