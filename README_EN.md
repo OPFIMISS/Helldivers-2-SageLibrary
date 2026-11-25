@@ -72,6 +72,10 @@ For a one-time **read-only export from one build**, rebuild with `--source runti
 
 Run `python -m pip install "mcp>=1.30,<2"`, configure your stdio MCP client to launch `python /absolute/path/Helldivers-2-SageLibrary/mcp_server.py`, and set `SAGELIB_DB` to the absolute path of the indexed SQLite file. Optionally set `SAGELIB_GAME_ROOT` to the game install root. The read-only tool `search_fields(query_text, limit=20)` does not accept arbitrary file paths, rebuild indexes, or modify the game. Client configuration formats vary. This optional entry point targets the official SDK 1.x; SDK 2.x has breaking API changes.
 
+## HellForge native stratagems and HUD
+
+The [HellForge stratagem skill](skills/helldivers2-hellforge-stratagem/SKILL.md) covers native registration, icons, localization and user-verified SEAF transport support, compound projectiles and Spear range changes for HellForge 0.4 / SDK16. The [persistent Lua HUD reference](skills/helldivers2-hellforge-stratagem/references/native-lua-hud.md) includes the Optical 0.3.3 presentation script: a separate UI world, 3x5 pixel percentages and change-only updates at up to 10 Hz. The user confirmed the HUD on 2026-11-25; body hiding, multiplayer and frame-time cost remain separately unverified. These references and scripts include no game assets or memory exports and do not change the query tool's read-only behavior.
+
 ## Tests and skill
 
 Run `python -m unittest discover -s tests -v`. Tests use synthetic bytes and no copyrighted assets. See the [HD2 Lua mod skill](skills/helldivers2-lua-mod/SKILL.md) and [C4 case study](skills/helldivers2-lua-mod/references/C4_CASE.md). A candidate number is not a confirmed gameplay effect; correlate peer records, lock the version, and verify behavior in game when needed.

@@ -1,0 +1,4 @@
+interface:
+  display_name: "HellForge 战略配备制作"
+  short_description: "制作与排查绝地潜兵 2 原生战略配备，涵盖投送注册、原版图标和简中文案"
+  default_prompt: "使用 $helldivers2-hellforge-stratagem 研究或制作一项独立战略配备，并处理注册、原版风格图标和简中文案。"

@@ -85,6 +85,10 @@ python sagelib.py search c4_charge_backpack --game-root "E:\SteamLibrary\steamap
 {"mcpServers":{"helldivers2-sagelibrary":{"command":"python","args":["/absolute/path/Helldivers-2-SageLibrary/mcp_server.py"],"env":{"SAGELIB_DB":"/absolute/path/index.sqlite3","SAGELIB_GAME_ROOT":"/absolute/path/to/Helldivers 2"}}}}
 ```
 
+## HellForge 原生战备与HUD经验
+
+[HellForge 战略配备 Skill](skills/helldivers2-hellforge-stratagem/SKILL.md)收录0.4 / SDK16的原生战备注册、图标与简中文案，以及用户实测通过的SEAF运输机支援、复合弹道和飞矛距离修改经验。[常驻 Lua HUD](skills/helldivers2-hellforge-stratagem/references/native-lua-hud.md)附光学迷彩0.3.3的绘制脚本，包含独立UI世界、3x5像素百分比和10Hz变化更新；2026-11-25用户已确认HUD显示正常。身体隐藏、联机与帧率开销的验证状态单独记录，不随HUD扩大通过范围。资料和脚本不包含游戏资源或运行时内存导出，也不改变本仓库查询工具的只读行为。
+
 ## 开发与验证
 
 `python -m unittest discover -s tests -v`。测试只生成合成结构，不上传或依赖游戏资源。C4 从错误组件到正确背包储量表的复盘见 [C4 案例](skills/helldivers2-lua-mod/references/C4_CASE.md)，可复用的 MOD 开发规则见 [Skill](skills/helldivers2-lua-mod/SKILL.md)。查到某个值不等于证实其作用：仍需同类记录对照、版本锁定和针对性游戏内验证。
