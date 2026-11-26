@@ -74,7 +74,13 @@ Run `python -m pip install "mcp>=1.30,<2"`, configure your stdio MCP client to l
 
 ## HellForge native stratagems and HUD
 
-The [HellForge stratagem skill](skills/helldivers2-hellforge-stratagem/SKILL.md) covers native registration, icons, localization and user-verified SEAF transport support, compound projectiles and Spear range changes for HellForge 0.4 / SDK16. The [persistent Lua HUD reference](skills/helldivers2-hellforge-stratagem/references/native-lua-hud.md) includes the Optical 0.3.3 presentation script: a separate UI world, 3x5 pixel percentages and change-only updates at up to 10 Hz. The user confirmed the HUD on 2026-11-25; body hiding, multiplayer and frame-time cost remain separately unverified. These references and scripts include no game assets or memory exports and do not change the query tool's read-only behavior.
+The [HellForge stratagem skill](skills/helldivers2-hellforge-stratagem/SKILL.md) covers native registration, icons, localization and user-verified SEAF transport support, compound projectiles and Spear range changes for HellForge 0.4 / SDK16. The [persistent Lua HUD reference](skills/helldivers2-hellforge-stratagem/references/native-lua-hud.md) preserves the historical Optical 0.3.3 presentation script: a separate UI world, 3x5 pixel percentages and change-only updates at up to 10 Hz. The user confirmed the HUD on 2026-11-25; later cloak fixes are recorded below. Multiplayer and frame-time cost remain separately unverified. These references and scripts include no game assets or memory exports and do not change the query tool's read-only behavior.
+
+## Independent modules and cloak fixes
+
+The new [independent module skill](skills/helldivers2-hellforge-modules/SKILL.md) preserves the user-verified air-drop pickup transaction that installs an ability without occupying the native backpack slot, together with original source snapshots. On 2026-11-26 the user confirmed backpack coexistence and the final skinned-refraction fix. Exoskeletons, a multi-module registry and multiplayer remain extension directions, not completed features.
+
+The [skinned-refraction reference](skills/helldivers2-hellforge-stratagem/references/skinned-refraction.md) records bind-pose silhouettes, static versus skinned vertex shaders, userdata material slots and reversible backpack visibility. The [HP HUD+ case](skills/helldivers2-lua-mod/references/HP_HUD_FIX.md) records the automatic classification and failed-cache fix. Snapshots contain no extracted game assets, SDK, compiled mods or memory exports.
 
 ## Tests and skill
 

@@ -1,0 +1,4 @@
+interface:
+  display_name: "HellForge 独立装备模块"
+  short_description: "复用不占背包槽的模块安装路径，研究身体附件与外骨骼原型"
+  default_prompt: "使用 $helldivers2-hellforge-modules 研究或制作空投拾取安装的独立模块，保留原背包并处理生命期清理。"
