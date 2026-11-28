@@ -25,6 +25,9 @@ description: 为《绝地潜兵 2》HellForge 私服制作、研究或排查像 
 [飞矛锁定与火箭HUD](references/native-spear-rockets.md)。2026-11-28用户确认主要锁定与HUD表现；
 空爆发射、最新装填音和速度加成仍待实战确认，不能一并记成通过。
 Vix炮艇出现5秒电磁打击、不能接管或双重倒计时时，读[AC130生命周期](references/ac130-lifecycle.md)。
+制作电视制导导弹、接管弹体视角、排查接管后未响应或镜头被覆盖时，读
+[电视弹摄像头接管](references/tv-missile-camera.md)。2026-11-28用户确认镜头正常；
+新增Shift高低速切换仅通过编译与离线检查，联机仍待验证。
 角色出现透明十字人形、材质槽userdata错误或解除后背包永久隐藏时，读
 [骨骼折射与恢复](references/skinned-refraction.md)。2026-11-26用户确认最后一轮修正正常。
 制作空投拾取后不占背包槽的能力模块、身体附件或外骨骼原型时，使用相邻的

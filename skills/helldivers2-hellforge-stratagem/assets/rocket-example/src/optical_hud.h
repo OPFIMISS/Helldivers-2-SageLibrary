@@ -80,6 +80,39 @@ static int rocket_lua_observe(OpticalLua* lua)
     return 0;
 }
 
+static int rocket_lua_terminal_poll(OpticalLua* lua)
+{
+    optical_lua.push(lua,atomic_load(&rocket_tv_control));
+    for (unsigned i=0;i<7;++i) optical_lua.push(lua,atomic_load(&rocket_tv_view[i]));
+    optical_lua.push(lua,rocket_tv_exit_key);
+    optical_lua.push(lua,rocket_guide_key);
+    optical_lua.push(lua,atomic_load(&rocket_tv_speed_view));
+    optical_lua.boolean(lua,atomic_load(&rocket_tv_boosted));
+    return 12;
+}
+
+static int rocket_lua_terminal_ack(OpticalLua* lua)
+{
+    if (optical_lua.top(lua)<2 || optical_lua.type(lua,1)!=3 || optical_lua.type(lua,2)!=3) return 0;
+    const uint32_t generation=(uint32_t)optical_lua.number(lua,1);
+    if (generation && generation==atomic_load(&rocket_tv_control)) {
+        if (optical_lua.number(lua,2)>0) atomic_store(&rocket_tv_camera_ack,GetTickCount64());
+        else atomic_store(&rocket_tv_cancel,generation);
+    }
+    return 0;
+}
+
+static int rocket_lua_special_target(OpticalLua* lua)
+{
+    const int index=optical_lua.top(lua)>0?(int)optical_lua.number(lua,1)-1:-1;
+    if (index<0 || index>=6) {
+        optical_lua.push(lua,atomic_load(&rocket_sky_inflight));return 1;
+    }
+    optical_lua.push(lua,atomic_load(&rocket_sky_ui[index].count));
+    for (unsigned j=0;j<3;++j) optical_lua.push(lua,atomic_load(&rocket_sky_ui[index].point[j]));
+    return 4;
+}
+
 static int optical_lua_poll(OpticalLua* lua)
 {
     const uint32_t snapshot = atomic_load_explicit(&optical_gui_snapshot, memory_order_relaxed);
@@ -161,7 +194,10 @@ static int optical_gui_call(OpticalLua* lua, int args, int results, int error)
                 {"__liuli_optical_relation", optical_lua_relation},
                 {"__liuli_optical_notice", optical_lua_notice},
                 {"__liuli_rockets_poll", rocket_lua_poll},
-                {"__liuli_rockets_observe", rocket_lua_observe}
+                {"__liuli_rockets_observe", rocket_lua_observe},
+                {"__liuli_rocket_terminal_poll", rocket_lua_terminal_poll},
+                {"__liuli_rocket_terminal_ack", rocket_lua_terminal_ack},
+                {"__liuli_rocket_special_target", rocket_lua_special_target}
             };
             for (unsigned i = 0; i < sizeof(callbacks) / sizeof(callbacks[0]); ++i) {
                 optical_lua.closure(lua, callbacks[i].fn, 0);
@@ -218,24 +254,29 @@ static bool optical_gui_read_file(HfMod* mod,const wchar_t* suffix,char** output
 
 static bool optical_gui_read_source(HfMod* mod)
 {
-    char *optical=NULL,*rocket=NULL;
-    size_t a=0,b=0;
+    char *optical=NULL,*rocket=NULL,*terminal=NULL;
+    size_t a=0,b=0,c=0;
     if (!optical_gui_read_file(mod,L"\\optical_view.lua",&optical,&a) ||
-        !optical_gui_read_file(mod,L"\\rocket_view.lua",&rocket,&b)) {
+        !optical_gui_read_file(mod,L"\\rocket_view.lua",&rocket,&b) ||
+        !optical_gui_read_file(mod,L"\\rocket_terminal.lua",&terminal,&c)) {
         if (optical) HeapFree(GetProcessHeap(),0,optical);
+        if (rocket) HeapFree(GetProcessHeap(),0,rocket);
         return false;
     }
-    char* combined=HeapAlloc(GetProcessHeap(),0,a+b+10);
+    char* combined=HeapAlloc(GetProcessHeap(),0,a+b+c+20);
     if (combined) {
         memcpy(combined,optical,a);
         memcpy(combined+a,"\ndo\n",4);
         memcpy(combined+a+4,rocket,b);
-        memcpy(combined+a+4+b,"\nend\n",5);
+        memcpy(combined+a+4+b,"\nend\ndo\n",8);
+        memcpy(combined+a+12+b,terminal,c);
+        memcpy(combined+a+12+b+c,"\nend\n",5);
         optical_gui_source=combined;
-        optical_gui_source_length=a+b+9;
+        optical_gui_source_length=a+b+c+17;
     }
     HeapFree(GetProcessHeap(),0,optical);
     HeapFree(GetProcessHeap(),0,rocket);
+    HeapFree(GetProcessHeap(),0,terminal);
     return combined!=NULL;
 }
 
@@ -256,7 +297,7 @@ static void optical_gui_tick(HfMod* mod, float dt, void* user)
     optical_gui_mod = mod;
     const HfApi* api = HF_API(mod);
     if (!optical_gui_read_source(mod)) {
-        api->log(mod, "Field Support: optical_view.lua or rocket_view.lua missing or unreadable");
+        api->log(mod, "Field Support: optical_view.lua, rocket_view.lua or rocket_terminal.lua missing or unreadable");
         return;
     }
     const uintptr_t exe = api->module_base("helldivers2.exe", NULL);

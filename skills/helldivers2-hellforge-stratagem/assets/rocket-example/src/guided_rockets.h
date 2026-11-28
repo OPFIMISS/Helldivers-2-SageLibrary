@@ -54,6 +54,7 @@ static RocketCount rocket_count_next;
 static RocketConsume rocket_consume_next;
 static RocketSetMagazine rocket_set_magazine;
 static RocketCanFire rocket_can_fire_next;
+static RocketCanFire rocket_guidance_gate_next;
 static RocketReplicate rocket_replicate;
 static uintptr_t (*rocket_live_settings)(const void*);
 static uint32_t* (*rocket_handle_entity)(uint32_t*,uint32_t);
@@ -63,7 +64,7 @@ static _Thread_local unsigned rocket_pending_cost=1;
 static _Thread_local uint32_t rocket_pending_weapon;
 static _Thread_local struct {
     bool active, homing, split, retarget;
-    uint32_t target, seed, source, type;
+    uint32_t target, seed, source, type, node;
     float fuse;
 } rocket_shot;
 
@@ -71,6 +72,10 @@ typedef struct RocketFlight {
     bool active, homing, split, retarget;
     uint32_t type, target, seed, source;
     float age, distance, fuse;
+    unsigned special;
+    uint32_t node,preference;
+    float launch[3], direction[3], scan, speed;
+    bool positioned, terminal, handed_off, boosted;
 } RocketFlight;
 static RocketFlight rocket_flights[2048];
 static struct { uint32_t entity; unsigned variant; float age,distance,last[3]; bool positioned; }
@@ -89,7 +94,8 @@ static void rocket_queue_shot(void)
     const unsigned at=rocket_intent_cursor++%128;
     rocket_intents[at].flight=(RocketFlight){.active=true,.homing=rocket_shot.homing,
         .split=rocket_shot.split,.retarget=rocket_shot.retarget,.target=rocket_shot.target,
-        .seed=rocket_shot.seed,.source=rocket_shot.source,.type=rocket_shot.type,.fuse=rocket_shot.fuse};
+        .seed=rocket_shot.seed,.source=rocket_shot.source,.type=rocket_shot.type,.fuse=rocket_shot.fuse,
+        .node=rocket_shot.node};
     rocket_intents[at].type=rocket_shot.type;
     rocket_intents[at].expires=GetTickCount64()+3000;
     ReleaseSRWLockExclusive(&rocket_intent_lock);
@@ -124,10 +130,13 @@ static uint32_t rocket_network_id(uint32_t entity)
     return network;
 }
 
+#include "rocket_special.h"
+
 static void rocket_message(HfMod* mod,const HfEventInfo* info,void* user)
 {
     (void)user;
     const HfMessageEvent* event=(const HfMessageEvent*)info;
+    if (rocket_special_message(mod,event)) return;
     if (event->bytes!=sizeof(RocketMessage)) return;
     RocketMessage packet;
     memcpy(&packet,event->data,sizeof(packet));
@@ -275,17 +284,31 @@ static uint32_t rocket_round_count(void* manager, uint32_t entity)
         const HfApi* api=HF_API(rocket_mod);
         HfRef resource=0;
         if (optical_entity_unit(api,(uintptr_t)hf_global_EntityManager(rocket_mod),entity,&resource) &&
-            resource==rocket_weapons[1]) return 1;
+            (resource==rocket_weapons[1] || rocket_special_index(resource))) return 1;
     }
     return count;
 }
 
 static bool rocket_can_fire(void* manager,uint32_t entity)
 {
+    if (rocket_special_held && entity==rocket_weapon) return rocket_special_allowed(entity);
+    HfRef special_resource=0;
+    if (optical_entity_unit(HF_API(rocket_mod),(uintptr_t)hf_global_EntityManager(rocket_mod),entity,&special_resource) &&
+        rocket_special_index(special_resource)) return rocket_special_allowed(entity);
     if (entity==rocket_weapon && rocket_kind && !rocket_allowed(entity)) return false;
     if (entity==rocket_weapon && rocket_kind==2 &&
         (!rocket_guidance || rocket_function==ROCKET_AIRBURST)) return true;
     return rocket_can_fire_next(manager,entity);
+}
+
+static bool rocket_guidance_gate(void* manager,uint32_t entity)
+{
+    /* 77EE2E..77EE48 separately requires GuidanceTargets.instance+8 on Spear.
+     * The magazine gate alone cannot enable our unguided primitive rounds. */
+    HfRef resource=0;
+    if (optical_entity_unit(HF_API(rocket_mod),(uintptr_t)hf_global_EntityManager(rocket_mod),entity,&resource) &&
+        rocket_special_index(resource)) return rocket_special_allowed(entity);
+    return rocket_guidance_gate_next(manager,entity);
 }
 
 static void rocket_consume(void* manager, uint32_t entity)
@@ -314,7 +337,7 @@ static uint32_t rocket_realize(void* system, const uint8_t* request, const uint8
                 .active=true,.homing=rocket_shot.homing,.split=rocket_shot.split,
                 .retarget=rocket_shot.retarget,
                 .target=rocket_shot.target,.seed=rocket_shot.seed,.source=rocket_shot.source,.type=type,
-                .fuse=rocket_shot.fuse
+                .fuse=rocket_shot.fuse,.node=rocket_shot.node
             };
         }
         AcquireSRWLockExclusive(&rocket_intent_lock);
@@ -333,6 +356,7 @@ static uint32_t rocket_realize(void* system, const uint8_t* request, const uint8
             rocket_intents[match].expires=0;
         }
         ReleaseSRWLockExclusive(&rocket_intent_lock);
+        rocket_special_realized(result,source,type,seed);
     }
     return result;
 }
@@ -340,7 +364,8 @@ static uint32_t rocket_realize(void* system, const uint8_t* request, const uint8
 static void rocket_fire(void* manager,uint32_t index,uint32_t type,const uint8_t* transform,
     uint32_t owner,float a6,uint32_t seed,uint8_t a8,float a9,float a10,float a11,uint8_t a12)
 {
-    bool custom=rocket_kind || type==rocket_projectiles[0] || type==rocket_projectiles[1];
+    bool custom=rocket_kind || rocket_special_held || type==rocket_projectiles[0] ||
+        type==rocket_projectiles[1] || type==rocket_special_projectiles[0] || type==rocket_special_projectiles[1];
     for (unsigned i=0;!custom && i<4;++i) custom=rocket_peers[i].peer!=0;
     if (!custom) {
         rocket_pellet_next(manager,index,type,transform,owner,a6,seed,a8,a9,a10,a11,a12);
@@ -353,6 +378,7 @@ static void rocket_fire(void* manager,uint32_t index,uint32_t type,const uint8_t
     HfRef resource=0;
     if (descriptor) api->read(descriptor+8,&source,4);
     if (source) optical_entity_unit(api,(uintptr_t)hf_global_EntityManager(rocket_mod),source,&resource);
+    if (rocket_special_fire(manager,index,transform,owner,a6,seed,a8,a9,a10,a11,a12,source,resource)) return;
     int which=-1;
     for (unsigned i=0;i<2;++i) if (resource==rocket_weapons[i]) which=(int)i;
     if (which<0) {
@@ -521,8 +547,12 @@ static void rocket_update_flights(HfMod* mod,float dt)
             api->read(flight,position,12) || api->read(flight+12,velocity,12) ||
             api->read(system+938048+slot*4,&type,4) || type!=f->type ||
             api->read(flight+48,&distance,4) || !isfinite(distance) || distance+0.1f<f->distance ||
-            (f->age+=dt)>8.0f) { f->active=false;continue; }
+            (f->age+=dt)>(f->special?16.0f:8.0f)) { f->active=false;continue; }
         f->distance=distance;
+        if (f->special) {
+            rocket_special_flight(mod,slot,flight,position,velocity,dt);
+            continue;
+        }
         if (f->type==rocket_projectiles[4]) {
             if (f->fuse>0) {
                 const float remaining=fmaxf(0.001f,f->fuse-distance/55.0f);
@@ -629,6 +659,7 @@ static void rocket_weapon_changed(HfMod* mod,const HfWeaponEvent* e,void* user)
     rocket_weapon=e->entity;
     rocket_avatar=e->avatar;
     rocket_kind=e->resource==rocket_weapons[0] ? 1 : e->resource==rocket_weapons[1] ? 2 : 0;
+    rocket_special_weapon(e);
     rocket_lock=rocket_lock_candidate=0;
     rocket_lock_time=rocket_reload_time=0;
 }
@@ -639,6 +670,7 @@ static void rocket_tick(HfMod* mod,float dt,void* user)
     const HfApi* api=HF_API(mod);
     const bool mission=api->game_state(mod)==HF_STATE_MISSION;
     if (!mission) {
+        rocket_special_reset();
         memset(rocket_flights,0,sizeof(rocket_flights));
         memset(rocket_native_flights,0,sizeof(rocket_native_flights));
         AcquireSRWLockExclusive(&rocket_intent_lock);
@@ -684,7 +716,7 @@ static void rocket_tick(HfMod* mod,float dt,void* user)
         const uint32_t unit=optical_entity_unit(api,(uintptr_t)hf_global_EntityManager(mod),rocket_avatar,NULL);
         optical_unit_position(api,unit,origin);
     }
-    if ((rocket_kind || active_flight || native_flight) && (rocket_scan_clock-=dt)<=0) {
+    if ((rocket_kind || rocket_special_held || active_flight || native_flight) && (rocket_scan_clock-=dt)<=0) {
         rocket_scan_clock=0.1f;
         rocket_scan_targets(mod,origin);
     }
@@ -702,7 +734,11 @@ static void rocket_tick(HfMod* mod,float dt,void* user)
     }
     if (active_flight) rocket_update_flights(mod,dt);
     if (native_flight) rocket_update_native(mod,dt);
-    if (!rocket_kind) { atomic_store(&rocket_ui_state,0);rocket_network_tick(mod,dt);return; }
+    rocket_special_tick(mod,dt);
+    if (!rocket_kind) {
+        if (!rocket_special_held) atomic_store(&rocket_ui_state,0);
+        rocket_network_tick(mod,dt);return;
+    }
     const bool guide=rocket_pressed(rocket_guide_key), function=rocket_pressed(rocket_function_key), reload=rocket_pressed(rocket_reload_key);
     if (rocket_kind==2 && !rocket_reload_time) {
         if (guide && !rocket_previous_guide) { rocket_guidance=!rocket_guidance;rocket_lock_time=0;rocket_lock=0; }
@@ -785,6 +821,7 @@ static void rocket_rows(HfMod* mod,HfEvent event,void* user)
         p->expiry_explosion=i==4?427:0;
     }
     rocket_ready=true;
+    rocket_special_rows(mod);
     api->log(mod,"Rockets: four private blast profiles, AP5/AP3; 180 m/s direct rockets, 300 RPM");
 }
 
@@ -830,6 +867,8 @@ static void rocket_bind(HfMod* mod,HfEvent event,void* user)
         !api->code_matches(game+0x742900,"48 89 5C 24 20 55 56 57 48 83 EC 20") ||
         !api->code_matches(game+0x744690,"48 89 4C 24 08 53 55 56 57 41 55 41 57") ||
         !api->code_matches(game+0x744AD0,"48 89 5C 24 08 48 89 6C 24 10 48 89 74 24 18 48 89 7C 24 20 41 56 48 83 EC 20") ||
+        !api->code_matches(game+0x77EAD0,"48 89 5C 24 10 48 89 6C 24 18 48 89 74 24 20 57 41 56 41 57 48 83 EC 20") ||
+        !api->code_matches(game+0x77EE38,"48 8B 85 70 08 00 00 48 8D 0C B6 0F B6 44 88 08") ||
         !api->code_matches(game+0x76E2A0,"41 56 48 83 EC 20") ||
         !api->code_matches(game+0x13A8700,"48 89 5C 24 18 55 56 57 41 54 41 55 41 56 41 57") ||
         !api->code_matches(game+0x87FE30,"89 1C F7 48 8B 45 38") ||
@@ -841,6 +880,7 @@ static void rocket_bind(HfMod* mod,HfEvent event,void* user)
         api->hook_ex(mod,game+0x615940,(void*)rocket_fire,(void**)&rocket_pellet_next,0) ||
         api->hook_ex(mod,game+0x742900,(void*)rocket_round_count,(void**)&rocket_count_next,0) ||
         api->hook_ex(mod,game+0x744AD0,(void*)rocket_can_fire,(void**)&rocket_can_fire_next,0) ||
+        api->hook_ex(mod,game+0x77EAD0,(void*)rocket_guidance_gate,(void**)&rocket_guidance_gate_next,0) ||
         api->hook_ex(mod,game+0x744690,(void*)rocket_consume,(void**)&rocket_consume_next,0)) return;
     rocket_set_magazine=(RocketSetMagazine)(game+0x76E2A0);
     rocket_live_settings=(uintptr_t (*)(const void*))(game+0x515100);
@@ -871,6 +911,7 @@ static bool rocket_install(HfMod* mod,uint32_t heading)
     if (rocket_function_key<1 || rocket_function_key>255) rocket_function_key=VK_F7;
     if (rocket_reload_key<1 || rocket_reload_key>255) rocket_reload_key='R';
     atomic_store(&rocket_ui_keys,(uint32_t)rocket_guide_key|((uint32_t)rocket_function_key<<8)|((uint32_t)rocket_reload_key<<16));
+    if (!rocket_special_install(mod,heading,n?ini:NULL)) return false;
     static const char* damage_names[]={ROCKET_PREFIX"type2_blast",ROCKET_PREFIX"smart_blast",ROCKET_PREFIX"focus_blast",ROCKET_PREFIX"bomblet_blast"};
     static const char* projectile_names[]={ROCKET_PREFIX"type2_round",ROCKET_PREFIX"smart_round",ROCKET_PREFIX"focus_round",ROCKET_PREFIX"airburst_round",ROCKET_PREFIX"bomblet_round"};
     for (unsigned i=0;i<4;++i) {

@@ -4,10 +4,13 @@ local A,W,U,G,V,M=S.Application,S.World,S.Unit,S.Gui,S.Vector3,S.Matrix4x4
 local poll=assert(__liuli_rockets_poll)
 local observe=assert(__liuli_rockets_observe)
 local notice=assert(__liuli_optical_notice)
+local special_target=rawget(_G,'__liuli_rocket_special_target')
+local terminal_poll=rawget(_G,'__liuli_rocket_terminal_poll')
 local gui,world,main,world_count
 local ids,shapes={},{}
 local next_frame,last_frame,used=0,-10000,0
 local screen_camera,marker_x,marker_y,marker_size
+local screen_origin,screen_forward
 local mine=setmetatable({},{__mode='k'})
 local warned={}
 local unpack=unpack or table.unpack
@@ -28,7 +31,7 @@ local glyphs={
  ['[']='110100100100110',[']']='011001001001011'
 }
 -- BEGIN GENERATED CJK GLYPHS
-local chinese={} -- Generate using an installed, licensed font before use.
+local chinese={} -- Generate with a locally licensed font before use.
 -- END GENERATED CJK GLYPHS
 -- Names verified on the original enemy skeletons; absent nodes are never used.
 local function report(tag,why)
@@ -76,6 +79,8 @@ local function key_name(key)
 end
 local function draw(state,count,distance,keys,progress)
  local kind=state%4
+ if math.floor(state/1024)%2==1 then kind=3
+ elseif math.floor(state/2048)%2==1 then kind=4 end
  if kind==0 then reset(true);return end
  local current=A.main_world()
  if not current then reset(false);return end
@@ -98,6 +103,7 @@ local function draw(state,count,distance,keys,progress)
  local candidate=math.floor(state/128)%2==1
  local reloading=math.floor(state/256)%2==1
  local ready=math.floor(state/512)%2==1
+ local controlling=math.floor(state/4096)%2==1
  local modes={'单发','齐射','集中','空爆'}
  local mag,reserve=count%256,math.floor(count/256)%256
  local r,g,b=locked and 111 or 255,locked and 225 or 222,locked and 167 or 90
@@ -126,18 +132,71 @@ local function draw(state,count,distance,keys,progress)
    label(math.floor(distance+0.5)..'米',mx+s+8*k,my,k,r,g,b)
   end
  end
+ if kind==4 and special_target and screen_camera and S.Camera.world_to_screen then
+  for i=1,6 do
+   local assigned,px,py,pz=special_target(i)
+   local front=screen_origin and screen_forward and px and
+    (px-screen_origin[1])*screen_forward[1]+(py-screen_origin[2])*screen_forward[2]+(pz-screen_origin[3])*screen_forward[3]>0.5
+   if assigned and assigned>0 and front then
+    local p=S.Camera.world_to_screen(screen_camera,V(px,py,pz))
+    local mx,my=V.x(p),V.y(p)
+    if mx==mx and my==my and mx>0 and mx<width and my>0 and my<height then
+     local s=23*k
+     for _,sx in ipairs({-1,1}) do for _,sy in ipairs({-1,1}) do
+      rect(mx+sx*s-(sx>0 and 9*k or 0),my+sy*s,9*k,k,225,111,225,167)
+      rect(mx+sx*s,my+sy*s-(sy>0 and 9*k or 0),k,9*k,225,111,225,167)
+     end end
+     label('X'..assigned,mx+s+5*k,my,k,111,225,167)
+    end
+   end
+  end
+ end
+ if controlling then
+  local cx,cy=width/2,height/2
+  rect(cx-18*k,cy,12*k,k,245,111,225,167);rect(cx+6*k,cy,12*k,k,245,111,225,167)
+  rect(cx,cy-18*k,k,12*k,245,111,225,167);rect(cx,cy+6*k,k,12*k,245,111,225,167)
+  for _,sx in ipairs({-1,1}) do for _,sy in ipairs({-1,1}) do
+   local px,py=width/2+sx*width*0.4,height/2+sy*height*0.36
+   rect(px-(sx>0 and 34*k or 0),py,34*k,2*k,155,111,225,167)
+   rect(px,py-(sy>0 and 34*k or 0),2*k,34*k,155,111,225,167)
+  end end
+ end
  rect(x-10*k,y-34*k,392*k,132*k,175,12,15,18)
  rect(x-10*k,y-34*k,2*k,132*k,240,r,g,b)
- label(kind==1 and '次式实验性火箭筒' or '智能火箭筒',x,y+76*k,k,232,235,221)
- label((guided and '锁定' or '直射')..' / '..modes[mode+1],x,y+54*k,k,r,g,b)
+ local titles={'次式实验性火箭筒','智能火箭筒','数控火箭筒','天穹智能导弹系统'}
+ label(titles[kind],x,y+76*k,k,232,235,221)
+ label(kind==3 and (controlling and '弹载视角 / 手动操纵' or '数控反坦克 / 电视制导') or
+  kind==4 and (guided and '锁定追踪 / 指定目标' or '直射升空 / 自主分配目标') or
+  (guided and '锁定' or '直射')..' / '..modes[mode+1],x,y+54*k,k,r,g,b)
  local status=not ready and '武器初始化中' or reloading and '正在装填' or
   not guided and '直射就绪' or locked and ('已锁定 '..math.floor(distance+0.5)..'米') or
   candidate and '正在锁定' or '瞄准中型或大型目标'
+ if ready and not reloading and kind==3 then status=controlling and
+  (candidate and '目标可交接 / 鼠标操纵' or '电视制导 / 鼠标操纵') or '发射后进入弹载视角' end
+ if ready and not reloading and kind==4 then status=guided and
+  (locked and '已锁定 / 发射后持续追踪' or candidate and '正在锁定' or '瞄准目标以锁定') or
+  '无需锁定 / 在空导弹 '..(special_target and special_target(0) or 0) end
  label(status,x,y+32*k,k,r,g,b)
- label('弹药 '..mag..(kind==2 and '/'..reserve or '/4'),x,y+10*k,k,232,235,221)
+ label('弹药 '..mag..(kind~=1 and '/'..reserve or '/4'),x,y+10*k,k,232,235,221)
  if kind==2 then
   label('['..key_name(keys%256)..']锁定/直射 ['..key_name(math.floor(keys/256)%256)..']弹头',
    x,y-12*k,k,176,184,185)
+  label('['..key_name(math.floor(keys/65536)%256)..']装填',x+186*k,y+10*k,k,176,184,185)
+ elseif kind==3 then
+  local exit_key,speed,boosted=121,30,false
+  if terminal_poll then
+   local values={terminal_poll()};exit_key=values[9] or exit_key
+   speed,boosted=values[11] or speed,values[12]==true
+  end
+  label('['..key_name(keys%256)..']锁定交接 ['..key_name(exit_key or 121)..']返回',x,y-12*k,k,176,184,185)
+  if controlling then
+   label((boosted and '高速 ' or '低速 ')..math.floor(speed+0.5)..'米/秒',x+186*k,y+10*k,k,r,g,b)
+   label('[SHIFT]切换',x+262*k,y-12*k,k,176,184,185)
+  else
+   label('['..key_name(math.floor(keys/65536)%256)..']装填',x+186*k,y+10*k,k,176,184,185)
+  end
+ elseif kind==4 then
+  label('['..key_name(keys%256)..']锁定/直射',x,y-12*k,k,176,184,185)
   label('['..key_name(math.floor(keys/65536)%256)..']装填',x+186*k,y+10*k,k,176,184,185)
  else
   label('锁定后发射 / 发射后无需持续瞄准',x,y-12*k,k,176,184,185)
@@ -152,6 +211,7 @@ end
 local function camera(target,avatar,tx,ty,tz)
  marker_x,marker_y=nil,nil
  screen_camera=nil
+ screen_origin,screen_forward=nil,nil
  local current=A.main_world()
  if not current then return end
  local origin,forward,best
@@ -177,6 +237,7 @@ local function camera(target,avatar,tx,ty,tz)
  end
  local ox,oy,oz=V.x(origin),V.y(origin),V.z(origin)
  local fx,fy,fz=V.x(forward),V.y(forward),V.z(forward)
+ screen_origin,screen_forward={ox,oy,oz},{fx,fy,fz}
  observe(ox,oy,oz,fx,fy,fz)
  if target and U.alive(target) then
   -- The native lock supplies its selected targeting node, including buildings.
