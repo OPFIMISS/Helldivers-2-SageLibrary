@@ -20,6 +20,7 @@ description: 为 HellForge 0.4 制作空投拾取后安装、不占背包槽的�
 
 - 制作新模块前，读[安装与生命周期](references/installation.md)，确认资源身份、权威、延迟回收和提交顺序。
 - 扩展外骨骼、多个模块或联机时，读[扩展边界](references/extensions.md)，区分已实现机制和设计建议。
+- 能量要适配断腿慢走或需要可撤销移速加成时，读[实际速度与能量](references/movement-energy.md)。2026-11-28新增代码未实战确认，不能覆盖下方实测快照的验证状态。
 - [assets/module-example](assets/module-example)保留实测版本的原创C源码、Lua显示脚本和按键配置，不含DLL、游戏资源、SDK或内存导出。该快照需要自行提供SDK16、对应私有模型/图标/材质和MOD清单，不能单独作为成品安装。
 - `src/module_state.h`可单独复用状态事务；`module_pickup.h`依赖`optical_wear.h`提供的原生查询、资源身份与存活函数，不是独立头文件库。
 - 骨骼折射与恢复细节见相邻战略配备Skill的[角色折射](../helldivers2-hellforge-stratagem/references/skinned-refraction.md)。新增战备、投送架和资源包注册也由该Skill处理。

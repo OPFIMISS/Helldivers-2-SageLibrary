@@ -74,6 +74,15 @@ Run `python -m pip install "mcp>=1.30,<2"`, configure your stdio MCP client to l
 
 ## HellForge native stratagems and HUD
 
+The 2026-11-28 [native Spear and rocket HUD reference](skills/helldivers2-hellforge-stratagem/references/native-spear-rockets.md)
+records target handles and targeting nodes, persistent missile tracking, native scope, projected lock brackets,
+persistent GUI objects and generated Chinese pixel text. The user approved the main targeting and HUD result;
+airburst firing still needs in-game verification after the latest gate fix. Additional notes cover
+[AC130 lifecycle](skills/helldivers2-hellforge-stratagem/references/ac130-lifecycle.md),
+[speed-based cloak energy](skills/helldivers2-hellforge-modules/references/movement-energy.md) and
+[overrestrictive spawn guards](skills/helldivers2-lua-mod/references/HELLFORGE_SPAWN_GUARD.md).
+Examples contain source and a glyph-generation algorithm, not game data, memory images, DLLs or system fonts.
+
 The [HellForge stratagem skill](skills/helldivers2-hellforge-stratagem/SKILL.md) covers native registration, icons, localization and user-verified SEAF transport support, compound projectiles and Spear range changes for HellForge 0.4 / SDK16. The [persistent Lua HUD reference](skills/helldivers2-hellforge-stratagem/references/native-lua-hud.md) preserves the historical Optical 0.3.3 presentation script: a separate UI world, 3x5 pixel percentages and change-only updates at up to 10 Hz. The user confirmed the HUD on 2026-11-25; later cloak fixes are recorded below. Multiplayer and frame-time cost remain separately unverified. These references and scripts include no game assets or memory exports and do not change the query tool's read-only behavior.
 
 ## Independent modules and cloak fixes

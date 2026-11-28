@@ -87,6 +87,14 @@ python sagelib.py search c4_charge_backpack --game-root "E:\SteamLibrary\steamap
 
 ## HellForge 原生战备与HUD经验
 
+2026-11-28补充[飞矛原生锁定与中文火箭HUD](skills/helldivers2-hellforge-stratagem/references/native-spear-rockets.md)，
+记录目标句柄与骨骼节点、发射后持续跟踪、飞矛镜体、四角锁定框、常驻GUI和中文点阵生成。
+用户已认可主要锁定、HUD位置和字体；空爆发射仍待这轮修正后的实测。
+另收录[AC130呼叫与接管](skills/helldivers2-hellforge-stratagem/references/ac130-lifecycle.md)、
+[实际速度驱动迷彩能量](skills/helldivers2-hellforge-modules/references/movement-energy.md)和
+[刷怪保护过严](skills/helldivers2-lua-mod/references/HELLFORGE_SPAWN_GUARD.md)。
+示例仅含源码与字形生成算法，不发布游戏文件、内存镜像、DLL或系统字体。
+
 [HellForge 战略配备 Skill](skills/helldivers2-hellforge-stratagem/SKILL.md)收录0.4 / SDK16的原生战备注册、图标与简中文案，以及用户实测通过的SEAF运输机支援、复合弹道和飞矛距离修改经验。[常驻 Lua HUD](skills/helldivers2-hellforge-stratagem/references/native-lua-hud.md)保留光学迷彩0.3.3历史绘制脚本，包含独立UI世界、3x5像素百分比和10Hz变化更新；2026-11-25用户已确认HUD显示正常。后续迷彩修正见下一节，联机与帧率开销仍未单独验证。资料和脚本不包含游戏资源或运行时内存导出，也不改变本仓库查询工具的只读行为。
 
 ## 独立模块与迷彩修正

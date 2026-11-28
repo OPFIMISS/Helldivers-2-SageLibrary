@@ -21,6 +21,10 @@ description: 为《绝地潜兵 2》HellForge 私服制作、研究或排查像 
 版本和历史失败，包含运输机乘员崩溃、直射火箭和Lua HUD线程的已知坑。
 原生模组需要常驻能量条、像素数字或与NarrowHUD共存的界面时，读
 [原生Lua HUD](references/native-lua-hud.md)，其中附0.3.3用户实测通过的绘制脚本与桥接约定。
+制作飞矛式原生锁定与持续追踪、双轴弹头模式、准心部位框及中文点阵面板时，读
+[飞矛锁定与火箭HUD](references/native-spear-rockets.md)。2026-11-28用户确认主要锁定与HUD表现；
+空爆发射、最新装填音和速度加成仍待实战确认，不能一并记成通过。
+Vix炮艇出现5秒电磁打击、不能接管或双重倒计时时，读[AC130生命周期](references/ac130-lifecycle.md)。
 角色出现透明十字人形、材质槽userdata错误或解除后背包永久隐藏时，读
 [骨骼折射与恢复](references/skinned-refraction.md)。2026-11-26用户确认最后一轮修正正常。
 制作空投拾取后不占背包槽的能力模块、身体附件或外骨骼原型时，使用相邻的

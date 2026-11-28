@@ -19,6 +19,9 @@ SageLibrary 的 `evidence` 有明确边界：`historical_not_current` 仅供发�
 
 ## 可复用案例
 
+HellForge多倍刷怪在高难度仍增援稀少时，读[容量保护与增援节奏](references/HELLFORGE_SPAWN_GUARD.md)。
+已从日志确认旧保护可把原版预算和频率压至0.1倍；新放宽方案只做离线检查，不能宣称游戏内稳定。
+
 HellForge下HP HUD+攻击不自动显示、Q标记仍有效时，读[HP HUD+分类与缓存修复](references/HP_HUD_FIX.md)。
 该案例已获2026-11-26用户实机确认；根因是错误假定组件表内存分配包含完整实体数据，并永久缓存早期分类失败，
 没有证据证明NarrowHUD直接抢事件。参考同时说明松散Lua和实际档案资源需同步更新。
