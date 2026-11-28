@@ -74,6 +74,8 @@ Run `python -m pip install "mcp>=1.30,<2"`, configure your stdio MCP client to l
 
 ## HellForge native stratagems and HUD
 
+The [HellForge 0.4 capacity reference](skills/helldivers2-hellforge-stratagem/references/hellforge04-capacity.md) includes a source patch against the exact 0.4 baseline: 48 to 96 added stratagems, 64 to 128 added projectiles, and 64 to 256 entity/behaviour definitions each. It covers picker stack storage, unwind metadata and fixed-array guards while retaining the original network widths. Compilation and targeted offline checks passed; in-game and multiplayer verification remain pending.
+
 The 2026-11-28 [native Spear and rocket HUD reference](skills/helldivers2-hellforge-stratagem/references/native-spear-rockets.md)
 records target handles and targeting nodes, persistent missile tracking, native scope, projected lock brackets,
 persistent GUI objects and generated Chinese pixel text. The user approved the main targeting and HUD result;

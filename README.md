@@ -87,6 +87,8 @@ python sagelib.py search c4_charge_backpack --game-root "E:\SteamLibrary\steamap
 
 ## HellForge 原生战备与HUD经验
 
+新增[HellForge 0.4注册容量扩展](skills/helldivers2-hellforge-stratagem/references/hellforge04-capacity.md)，记录战备48→96、弹丸64→128、实体与行为定义各64→256，以及菜单栈、异常展开和固定数组保护。附精确0.4基线的源码补丁，保留原网络位宽；编译和离线检查已通过，游戏内与联机仍待确认。
+
 2026-11-28补充[飞矛原生锁定与中文火箭HUD](skills/helldivers2-hellforge-stratagem/references/native-spear-rockets.md)，
 记录目标句柄与骨骼节点、发射后持续跟踪、飞矛镜体、四角锁定框、常驻GUI和中文点阵生成。
 用户已认可主要锁定、HUD位置和字体；空爆发射仍待这轮修正后的实测。
